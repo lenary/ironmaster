@@ -1,0 +1,16 @@
+{application, ironmaster,
+ [
+  {description, "Deployment Management for Erlang"},
+  {vsn, "1"},
+  {modules, [
+             ironmaster_app,
+             ironmaster_sup
+            ]},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { ironmaster_app, []}},
+  {env, []}
+ ]}.
