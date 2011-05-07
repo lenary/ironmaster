@@ -1,0 +1,8 @@
+Roadmap:
+========
+
+V0.1
+----
+* im_audit_log (gen_event off top sup)
+* nice apis on top of im_pool, im_operation and ironmaster itself
+* n+1 pools

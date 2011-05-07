@@ -13,19 +13,17 @@
 % Portions created by Samuel Elliott are Copyright 2011, Samuel Elliott.
 % All Rights Reserved.
 
--module(ironmaster_app).
+-module(ironmaster).
 
--behaviour(application).
+-author('Sam Elliott <sam@lenary.co.uk>').
 
-%% Application callbacks
--export([start/2, stop/1]).
+-export([
+         new_operation/3
+        ]).
 
-%% ===================================================================
-%% Application callbacks
-%% ===================================================================
+% TODO: verify at the start_link level.
+new_operation(Operation, PoolType, Servers) ->
+  true = im_utils:verify_is(im_operation, Operation) and
+         im_utils:verify_is(im_pool, PoolType),
+  im_pool_sup:start_link(Operation, PoolType, Servers).
 
-start(_StartType, _StartArgs) ->
-    ironmaster_sup:start_link().
-
-stop(_State) ->
-    ok.

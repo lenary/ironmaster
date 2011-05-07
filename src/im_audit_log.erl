@@ -13,19 +13,21 @@
 % Portions created by Samuel Elliott are Copyright 2011, Samuel Elliott.
 % All Rights Reserved.
 
--module(ironmaster_app).
+-module(im_audit_log).
 
--behaviour(application).
-
-%% Application callbacks
--export([start/2, stop/1]).
+-export ([start_link/0,
+          add_handler/2,
+          delete_handler/2]).
 
 %% ===================================================================
-%% Application callbacks
+%% API functions
 %% ===================================================================
 
-start(_StartType, _StartArgs) ->
-    ironmaster_sup:start_link().
+start_link() ->
+  gen_event:start_link({local, ?MODULE}).
 
-stop(_State) ->
-    ok.
+add_handler(Handler, Args) ->
+  gen_event:add_handler(?MODULE, Handler, Args).
+
+delete_handler(Handler, Args) ->
+  gen_event:delete_handler(?MODULE, Handler, Args).

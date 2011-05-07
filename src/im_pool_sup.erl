@@ -13,7 +13,7 @@
 % Portions created by Samuel Elliott are Copyright 2011, Samuel Elliott.
 % All Rights Reserved.
 
--module(ironmaster_sup).
+-module(im_pool_sup).
 
 -behaviour(supervisor).
 
@@ -33,18 +33,18 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
+start_child(Operation, PoolType, Servers) ->
+    supervisor:start_child(?MODULE, pool_spec(Operation, PoolType, Servers)).
+
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, [?CHILD(im_pool_sup, supervisor),
-                                  ?CHILD(im_operation_sup, supervisor),
-                                  {im_audit_log,
-                                   {im_audit_log, start_link, []},
-                                   permanent,
-                                   5000,
-                                   worker,
-                                   dynamic}
-                                  ] } }.
+    {ok, { {one_for_one, 5, 10}, []} }.
+
+
+% TODO
+pool_spec(Operation, PoolType, Servers) ->
+    {}.
 
