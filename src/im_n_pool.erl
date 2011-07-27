@@ -15,99 +15,175 @@
 
 -module(im_n_pool).
 
--behaviour(im_pool).
+% FSM:
+%  [idling]
+%      |
+%      v (start)
+% [preparing] -> [finished]
+%     | ^ (node_finished)
+%   * v |
+% [converging]
+
+-behaviour(gen_fsm).
 
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
 
 -export([
-         start_link/1
+         start_link/3,
+         finished_node/2,
+         add_nodes/2
         ]).
 
 %% ------------------------------------------------------------------
-%% im_pool Function Exports
+%% gen_fsm Function Exports
 %% ------------------------------------------------------------------
 
 -export([
          init/1,
-         handle_add/2,
-         handle_start/1,
-         handle_next/1,
-         handle_prepare/1,
-         handle_converge/1,
-         handle_finish/1,
-         handle_info/2,
-         terminate/2,
-         code_change/3
+         handle_event/3,
+         handle_sync_event/4,
+         handle_info/3,
+         terminate/3,
+         code_change/4
         ]).
+
+-export([
+         idling/2,
+         idling/3,
+         preparing/2,
+         preparing/3,
+         converging/2,
+         converging/3,
+         finished/2
+        ]).
+
+%% ------------------------------------------------------------------
+%% Record Definitions
+%% ------------------------------------------------------------------
 
 -record(n_pool, {
           todo = [],  % servers yet to be checked
           done = [],  % servers already checked
           current,    % server currently being checked
           operation,  % the module containing the operation
-          identifier  % auto-generated fsm instance identifier
+          name        %
         }).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
 
-start_link(Args) ->
-  im_pool:start_link([{pool_type, ?MODULE}|Args]).
+start_link(Name, Operation, Todo) ->
+  Name1 = im_utils:pool_name(Name),
+  gen_fsm:start_link({local, Name1}, ?MODULE, [Name, Operation, Todo], []).
+
+
+finished_node(Name, Node) ->
+  Name1 = im_utils:pool_name(Name),
+  gen_fsm:send_event(Name1, {finished_node, Node}).
+
+
+add_nodes(Name, Node) when is_atom(Node) ->
+  add_nodes(Name, [Node]);
+
+add_nodes(Name, Nodes) when is_list(Nodes) ->
+  Name1 = im_utils:pool_name(Name),
+  gen_fsm:send_sync_event(Name1, {add_nodes, Nodes}).
 
 %% ------------------------------------------------------------------
-%% im_pool Function Definitions
+%% gen_fsm Function Definitions
 %% ------------------------------------------------------------------
 
-init(Args) ->
-  Todo      = proplists:get_value(todo,       Args, []),
-  Operation = proplists:get_value(operation,  Args),
-  Id        = proplists:get_value(identifier, Args),
-  {ok, #n_pool{todo=Todo, operation=Operation, identifier=Id}}.
+init([Name, Operation, Todo]) ->
+  State = #n_pool{name=Name, operation=Operation, todo=Todo},
+  {ok, idling, State}.
 
-handle_add(Servers, #n_pool{todo=Todo} = State) ->
-  State1 = State#n_pool{todo = Todo ++ Servers},
-  {ok, State1}.
+handle_event(_Event, StateName, State) ->
+  {next_state, StateName, State}.
 
-handle_start(State) ->
-  case State#n_pool.todo of
-    []                        -> {error, no_nodes};
-    Todos when is_list(Todos) -> {ok, next_node(State)}
-  end.
+handle_sync_event(_Event, _From, StateName, State) ->
+  {reply, ok, StateName, State}.
 
-handle_next(State) ->
-  NewState = next_node(State),
-  {ok, NewState}.
+handle_info(_Info, StateName, State) ->
+  {next_state, StateName, State}.
 
-handle_prepare(_State) ->
+terminate(_Reason, _StateName, _State) ->
   ok.
 
-% TODO
-handle_converge(_State) ->
-  % spawn im_operation here, passing through identifier.
-  % Use this identifier any time a callback is sent through
-  ok.
+code_change(_OldVsn, StateName, State, _Extra) ->
+  {ok, StateName, State}.
 
-handle_finish(_State) ->
-  ok.
+%% ------------------------------------------------------------------
+%% gen_fsm State Callback Definitions
+%% ------------------------------------------------------------------
 
-handle_info(_Info, State) ->
-  {ok, State}.
+idling(start, State) ->
+  im_audit_log:notify({pool_started, State#n_pool.name, State#n_pool.todo}),
+  {next_state, preparing, State, 0};
+idling(_Event, State) ->
+  {next_state, idling, State}.
 
-terminate(_Reason, _State) ->
-  ok.
+idling({add_nodes, Nodes}, _From, #n_pool{todo=Todo} = State) ->
+  State1 = State#n_pool{todo = Todo ++ Nodes},
+  {reply, {ok, State#n_pool.todo}, idling, State1};
 
-code_change(_OldVsn, State, _Extra) ->
-  {ok, State}.
+idling(_Event, _From, State) ->
+  {reply, ok, idling, State}.
+
+
+
+preparing(timeout, PoolState) ->
+  {NewState, PoolState1} = next_node(PoolState),
+  {next_state, NewState, PoolState1, 0};
+
+preparing(_Event, State) ->
+  {next_state, preparing, State}.
+
+preparing({add_nodes, _}, _From, State) ->
+  {reply, not_allowed, preparing, State};
+
+preparing(_Event, _From, State) ->
+  {reply, ok, preparing, State}.
+
+
+converging(timeout, State) ->
+  im_audit_log:notify({pool_started_node, State#n_pool.name, State#n_pool.current}),
+  % TODO: start converging here.
+  {next_state, converging, State};
+
+converging(finished_node, State) ->
+  im_audit_log:notify({pool_finished_node, State#n_pool.name, State#n_pool.current}),
+  {next_state, preparing, State, 0};
+
+converging(_Event, State) ->
+  {next_state, converging, State}.
+
+converging({add_nodes, _}, _From, State) ->
+  {reply, not_allowed, converging, State};
+
+converging(_Event, _From, State) ->
+  {reply, ok, converging, State}.
+
+
+finished(timeout, State) ->
+  im_audit_log:notify({pool_finished, State#n_pool.name, State#n_pool.done}),
+  {stop, normal, State}.
+
 
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
+next_node(#n_pool{todo=[], current=Previous, done=Done} = ServerPool) ->
+  ServerPool1 = ServerPool#n_pool{current=undefined, done=[Previous|Done]},
+  {finished, ServerPool1};
+
 next_node(#n_pool{todo=[First|Todo], current=undefined} = ServerPool) ->
-  ServerPool#n_pool{todo=Todo, current=First};
+  ServerPool1 = ServerPool#n_pool{todo=Todo, current=First},
+  {converging, ServerPool1};
 
 next_node(#n_pool{todo=[Next|Todo], current=Previous, done=Done} = ServerPool) ->
-  ServerPool#n_pool{todo=Todo, current=Next, done=[Previous|Done]}.
+  ServerPool1 = ServerPool#n_pool{todo=Todo, current=Next, done=[Previous|Done]},
+  {converging, ServerPool1}.

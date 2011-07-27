@@ -18,10 +18,15 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([
+         start_link/0,
+         start_child/2
+        ]).
 
 %% Supervisor callbacks
--export([init/1]).
+-export([
+         init/1
+        ]).
 
 %% Helper macro for declaring children of supervisor
 -define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
@@ -33,8 +38,10 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-start_child(Operation, PoolType, Servers) ->
-    supervisor:start_child(?MODULE, pool_spec(Operation, PoolType, Servers)).
+
+% for instance, start_child(im_n_pool, [foo, bar, [node1,node2]]).
+start_child(Type, [Name | _] = Opts) ->
+  supervisor:start_child(?MODULE, {Name, {Type, start_link, Opts}, transient, 5000, worker, [Type]}).
 
 %% ===================================================================
 %% Supervisor callbacks
@@ -42,9 +49,4 @@ start_child(Operation, PoolType, Servers) ->
 
 init([]) ->
     {ok, { {one_for_one, 5, 10}, []} }.
-
-
-% TODO
-pool_spec(Operation, PoolType, Servers) ->
-    {}.
 
