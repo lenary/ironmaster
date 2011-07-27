@@ -15,9 +15,12 @@
 
 -module(im_audit_log).
 
--export ([start_link/0,
+-export ([
+          start_link/0,
           add_handler/2,
-          delete_handler/2]).
+          delete_handler/2,
+          notify/1
+         ]).
 
 %% ===================================================================
 %% API functions
@@ -31,3 +34,6 @@ add_handler(Handler, Args) ->
 
 delete_handler(Handler, Args) ->
   gen_event:delete_handler(?MODULE, Handler, Args).
+
+notify(Event) ->
+  gen_event:notify(?MODULE, Event).
