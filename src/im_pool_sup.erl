@@ -28,9 +28,6 @@
          init/1
         ]).
 
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
-
 %% ===================================================================
 %% API functions
 %% ===================================================================
@@ -41,7 +38,8 @@ start_link() ->
 
 % for instance, start_child(im_n_pool, [foo, bar, [node1,node2]]).
 start_child(Type, [Name | _] = Opts) ->
-  supervisor:start_child(?MODULE, {Name, {Type, start_link, Opts}, transient, 5000, worker, [Type]}).
+  Name1 = im_utils:pool_name(Name),
+  supervisor:start_child(?MODULE, {Name1, {Type, start_link, Opts}, transient, 5000, worker, [Type]}).
 
 %% ===================================================================
 %% Supervisor callbacks
