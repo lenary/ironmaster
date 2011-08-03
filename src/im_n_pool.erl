@@ -32,6 +32,7 @@
 
 -export([
          start_link/3,
+         start_operation/1,
          finished_node/2,
          add_nodes/2
         ]).
@@ -76,21 +77,18 @@
 %% ------------------------------------------------------------------
 
 start_link(Name, Operation, Todo) ->
+  true = im_utils:verify_is(im_operation, Operation),
   Name1 = im_utils:pool_name(Name),
   gen_fsm:start_link({local, Name1}, ?MODULE, [Name, Operation, Todo], []).
 
+start_operation(Name) ->
+  im_pool:start_operation(Name).
 
 finished_node(Name, Node) ->
-  Name1 = im_utils:pool_name(Name),
-  gen_fsm:send_event(Name1, {finished_node, Node}).
+  im_pool:finished_node(Name, Node).
 
-
-add_nodes(Name, Node) when is_atom(Node) ->
-  add_nodes(Name, [Node]);
-
-add_nodes(Name, Nodes) when is_list(Nodes) ->
-  Name1 = im_utils:pool_name(Name),
-  gen_fsm:send_sync_event(Name1, {add_nodes, Nodes}).
+add_nodes(Name, Nodes)->
+  im_poool:add_nodes(Name, Nodes).
 
 %% ------------------------------------------------------------------
 %% gen_fsm Function Definitions
@@ -119,7 +117,7 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %% gen_fsm State Callback Definitions
 %% ------------------------------------------------------------------
 
-idling(start, State) ->
+idling(start_operation, State) ->
   im_audit_log:notify({pool_started, State#n_pool.name, State#n_pool.todo}),
   {next_state, preparing, State, 0};
 idling(_Event, State) ->
