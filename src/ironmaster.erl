@@ -22,5 +22,5 @@
         ]).
 
 new_operation(Type, Opts) ->
-  im_pool_sup:start_link(Type, Opts).
+  im_pool_sup:start_child(Type, Opts).
 
