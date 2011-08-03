@@ -148,7 +148,7 @@ preparing(_Event, _From, State) ->
 
 converging(timeout, State) ->
   im_audit_log:notify({pool_started_node, State#n_pool.name, State#n_pool.current}),
-  % TODO: start converging here.
+  start_converging(State),
   {next_state, converging, State};
 
 converging(finished_node, State) ->
@@ -185,3 +185,7 @@ next_node(#n_pool{todo=[First|Todo], current=undefined} = ServerPool) ->
 next_node(#n_pool{todo=[Next|Todo], current=Previous, done=Done} = ServerPool) ->
   ServerPool1 = ServerPool#n_pool{todo=Todo, current=Next, done=[Previous|Done]},
   {converging, ServerPool1}.
+
+
+start_converging(#n_pool{operation=Operation, current=Node, name=Pool}) ->
+  im_operation_sup:start_child([Operation, Node, Pool]).

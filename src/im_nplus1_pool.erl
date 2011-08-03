@@ -161,7 +161,7 @@ preparing(_Event, _From, State) ->
 
 converging(timeout, State) ->
   im_audit_log:notify({pool_started_node, State#nplus1_pool.name, State#nplus1_pool.current}),
-  % TODO: start converging here.
+  start_converging(State),
   {next_state, converging, State};
 
 converging({finished_node, Node}, #nplus1_pool{current=Node} = State) ->
@@ -201,6 +201,9 @@ choose(#nplus1_pool{done=Done, spare=Spare, current=Current,   todo=[Next|Todo]}
   ServerPool1 = ServerPool#nplus1_pool{done=[Spare|Done], spare=Current, current=Next, todo=Todo},
   {converging, ServerPool1}.
 
+
+start_converging(#nplus1_pool{operation=Operation, current=Node, name=Pool}) ->
+  im_operation_sup:start_child([Operation, Node, Pool]).
 
   % TODO: set off something here to hotswap stuff
 hotswap(_ServerPool) ->
