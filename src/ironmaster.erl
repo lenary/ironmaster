@@ -18,12 +18,9 @@
 -author('Sam Elliott <sam@lenary.co.uk>').
 
 -export([
-         new_operation/3
+         new_operation/2
         ]).
 
-% TODO: verify at the start_link level.
-new_operation(Operation, PoolType, Servers) ->
-  true = im_utils:verify_is(im_operation, Operation) and
-         im_utils:verify_is(im_pool, PoolType),
-  im_pool_sup:start_link(Operation, PoolType, Servers).
+new_operation(Type, Opts) ->
+  im_pool_sup:start_link(Type, Opts).
 
