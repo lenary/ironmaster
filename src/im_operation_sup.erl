@@ -20,7 +20,7 @@
 %% API
 -export([
          start_link/0,
-         start_child/3
+         start_child/1
         ]).
 
 %% Supervisor callbacks
@@ -34,10 +34,11 @@
 %% ===================================================================
 
 start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+  supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-start_child(Operation, Node, Extra) ->
-    supervisor:start_child(?MODULE, operation_spec(Operation, Node, Extra)).
+start_child([Operation, _Node, Pool] = Opts) ->
+  Name = im_utils:operation_name(Pool),
+  supervisor:start_child(?MODULE, {Name, {im_operation, start_link, Opts}, transient, 5000, worker, [Operation]}).
 
 %% ===================================================================
 %% Supervisor callbacks
@@ -46,7 +47,4 @@ start_child(Operation, Node, Extra) ->
 init([]) ->
     {ok, { {one_for_one, 5, 10}, []} }.
 
-% TODO
-operation_spec(Operation, Node, Extra) ->
-  {}.
 

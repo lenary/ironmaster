@@ -40,8 +40,7 @@
 
 -export([
          behaviour_info/1,
-         start/3,
-         start_link/1
+         start_link/3
         ]).
 
 %% ------------------------------------------------------------------
@@ -65,8 +64,9 @@
          finished/2
         ]).
 
--record(operation_info, {
-          operation = undefined,
+-record(operation, {
+          operation,
+          pool,
           node
         }).
 
@@ -82,24 +82,17 @@ behaviour_info(callbacks) ->
 behaviour_info(_Other) ->
   undefined.
 
-start(Operation, Node, Extra) ->
-  im_operation_sup:start_child(Operation, Node, Extra).
-
-% TODO
-start_link(Args) ->
-  gen_fsm:start_link({local, name}, ?MODULE, Args, []).
+start_link(Operation, Node, Pool) ->
+  true = im_utils:verify_is(im_operation, Operation),
+  Name = im_utils:operation_name(Pool),
+  gen_fsm:start_link({local, Name}, ?MODULE, [Operation, Node, Pool], []).
 
 %% ------------------------------------------------------------------
 %% gen_fsm Function Definitions
 %% ------------------------------------------------------------------
 
-init(Args) ->
-  Operation = proplists:get_value(operation, Args),
-  Node      = proplists:get_value(node, Args),
-  if Operation =:= undefined -> {stop, no_operation};
-     Operation =/= undefined ->
-        {ok, checking, #operation_info{node=Node, operation=Operation}, 0}
-  end.
+init([Operation, Node, Pool]) ->
+  {ok, before_checking, #operation{operation=Operation, node=Node, pool=Pool}, 1}.
 
 handle_event(_Event, StateName, State) ->
   {next_state, StateName, State}.
@@ -120,42 +113,52 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %% State Function Definitions
 %% ------------------------------------------------------------------
 
-before_checking(timeout, #operation_info{operation=Operation} = State) ->
-  NextState = case Operation:handle_check(State) of
+before_checking(timeout, State) ->
+  NextState = case handle_check(State) of
                 true  -> finished;
                 false -> converging
               end,
-  {next_state, NextState, State, 0};
+  {next_state, NextState, State, 1};
+
 before_checking(_Event, State) ->
   {next_state, before_checking, State}.
 
-converging(timeout, #operation_info{operation=Operation} = State) ->
-  Operation:handle_converge(State),
-  {next_state, after_checking, State, 0};
+
+converging(timeout, State) ->
+  handle_converge(State),
+  {next_state, after_checking, State, 1};
+
 converging(_Event, State) ->
   {next_state, converging, State}.
 
-after_checking(timeout, #operation_info{operation=Operation} = State) ->
-  NextState = case Operation:handle_check(State) of
+
+after_checking(timeout, State) ->
+  NextState = case handle_check(State) of
                 true  -> finished;
                 false -> error
               end,
-  {next_state, NextState, State, 0};
+  {next_state, NextState, State, 1};
+
 after_checking(_Event, State) ->
   {next_state, after_checking, State}.
 
+
 finished(timeout, State) ->
-  % notify
-  {stop, normal, State};
-finished(_Event, State) ->
-  {next_state, finished, State}.
+  im_pool:finished_node(State#operation.pool, State#operation.node),
+  {stop, normal, State}.
+
 
 error(timeout, State) ->
-  % notify
-  {stop, error, State};
-error(_Event, State) ->
-  {next_state, error, State}.
+  % im_audit_log:notify({operation_converge_failed, OpName, Server}),
+  im_pool:finished_node(State#operation.pool, State#operation.node),
+  {stop, normal, State}.
 
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+
+handle_check(#operation{operation=Operation, node=Node}) ->
+  Operation:handle_check(Node).
+
+handle_converge(#operation{operation=Operation, node=Node}) ->
+  Operation:handle_converge(Node).
