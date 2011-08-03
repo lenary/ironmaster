@@ -131,7 +131,7 @@ idling(start_operation, State) ->
 
 idling({finished_spare, Spare}, #nplus1_pool{spare=Spare} = State) ->
   im_audit_log:notify({pool_spare_up, State#nplus1_pool.name, State#nplus1_pool.spare}),
-  {next_state, preparing, State, 0};
+  {next_state, preparing, State, 1};
 
 idling(_Event, State) ->
   {next_state, idling, State}.
@@ -147,7 +147,7 @@ idling(_Event, _From, State) ->
 preparing(timeout, PoolState) ->
   {NewState, PoolState1} = choose(PoolState),
   ok = hotswap(PoolState1),
-  {next_state, NewState, PoolState1, 0};
+  {next_state, NewState, PoolState1, 1};
 
 preparing(_Event, State) ->
   {next_state, preparing, State}.
@@ -166,7 +166,7 @@ converging(timeout, State) ->
 
 converging({finished_node, Node}, #nplus1_pool{current=Node} = State) ->
   im_audit_log:notify({pool_finished_node, State#nplus1_pool.name, State#nplus1_pool.current}),
-  {next_state, preparing, State, 0};
+  {next_state, preparing, State, 1};
 
 converging(_Event, State) ->
   {next_state, converging, State}.

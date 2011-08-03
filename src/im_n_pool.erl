@@ -119,7 +119,7 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 
 idling(start_operation, State) ->
   im_audit_log:notify({pool_started, State#n_pool.name, State#n_pool.todo}),
-  {next_state, preparing, State, 0};
+  {next_state, preparing, State, 1};
 idling(_Event, State) ->
   {next_state, idling, State}.
 
@@ -134,7 +134,7 @@ idling(_Event, _From, State) ->
 
 preparing(timeout, PoolState) ->
   {NewState, PoolState1} = next_node(PoolState),
-  {next_state, NewState, PoolState1, 0};
+  {next_state, NewState, PoolState1, 1};
 
 preparing(_Event, State) ->
   {next_state, preparing, State}.
@@ -153,7 +153,7 @@ converging(timeout, State) ->
 
 converging(finished_node, State) ->
   im_audit_log:notify({pool_finished_node, State#n_pool.name, State#n_pool.current}),
-  {next_state, preparing, State, 0};
+  {next_state, preparing, State, 1};
 
 converging(_Event, State) ->
   {next_state, converging, State}.
