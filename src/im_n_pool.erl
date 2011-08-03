@@ -133,7 +133,7 @@ idling(_Event, _From, State) ->
 
 
 preparing(timeout, PoolState) ->
-  {NewState, PoolState1} = next_node(PoolState),
+  {NewState, PoolState1} = choose(PoolState),
   {next_state, NewState, PoolState1, 1};
 
 preparing(_Event, State) ->
@@ -174,16 +174,16 @@ finished(timeout, State) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-next_node(#n_pool{todo=[], current=Previous, done=Done} = ServerPool) ->
-  ServerPool1 = ServerPool#n_pool{current=undefined, done=[Previous|Done]},
+choose(#n_pool{done=Done, current=Current, todo=[]} = ServerPool) ->
+  ServerPool1 = ServerPool#n_pool{done=[Current|Done], current=undefined},
   {finished, ServerPool1};
 
-next_node(#n_pool{todo=[First|Todo], current=undefined} = ServerPool) ->
-  ServerPool1 = ServerPool#n_pool{todo=Todo, current=First},
+choose(#n_pool{done=[], current=undefined, todo=[Next|Todo]} = ServerPool) ->
+  ServerPool1 = ServerPool#n_pool{current=Next, todo=Todo},
   {converging, ServerPool1};
 
-next_node(#n_pool{todo=[Next|Todo], current=Previous, done=Done} = ServerPool) ->
-  ServerPool1 = ServerPool#n_pool{todo=Todo, current=Next, done=[Previous|Done]},
+choose(#n_pool{done=Done, current=Current, todo=[Next|Todo]} = ServerPool) ->
+  ServerPool1 = ServerPool#n_pool{done=[Current|Done], current=Next, todo=Todo},
   {converging, ServerPool1}.
 
 
