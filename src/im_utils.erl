@@ -17,7 +17,8 @@
 
 -export([
          operation_name/1,
-         pool_name/1
+         pool_name/1,
+         provider_name/1
         ]).
 
 -export([
@@ -29,6 +30,9 @@ pool_name(Operation) ->
 
 operation_name(Operation) ->
   identifier_to_atom(Operation, operation).
+
+provider_name(Provider) ->
+  identifier_to_atom(Provider, provider).
 
 identifier_to_atom(Identifier, Type) when is_atom(Type) ->
   identifier_to_atom(Identifier, atom_to_list(Type));

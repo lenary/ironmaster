@@ -18,25 +18,30 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([
+         start_link/0,
+         start_child/1
+        ]).
 
 %% Supervisor callbacks
--export([init/1]).
-
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
+-export([
+         init/1
+        ]).
 
 %% ===================================================================
 %% API functions
 %% ===================================================================
 
 start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+  supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+start_child(Provider) ->
+  Name = im_utils:provider_name(Provider),
+  supervisor:start_child(?MODULE, {Name, {im_provider, start_link, [Provider]}, permanent, 5000, worker, [im_provider, Provider]}).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, [
-                                  ] } }.
+    {ok, { {one_for_one, 5, 10}, [] } }.

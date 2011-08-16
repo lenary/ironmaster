@@ -102,6 +102,7 @@ add_nodes(Name, Nodes)->
 %% ------------------------------------------------------------------
 
 init([Name, Operation, Provider, Spare, Todo]) ->
+  im_provider_sup:start_child(Provider),
   State = #nplus1_pool{name=Name, operation=Operation, provider=Provider, spare=Spare, todo=Todo},
   {ok, idling, State}.
 
@@ -210,9 +211,9 @@ hotswap(_ServerPool) ->
   ok.
 
   % TODO: set off something here to prepare the spare
-setup_spare(_ServerPool) ->
-  ok.
+setup_spare(#nplus1_pool{provider=Provider, spare=Spare}) ->
+  ok = im_provider:bootstrap(Provider, Spare).
 
   % TODO: set off something here to teardown the spare
-teardown_spare(_ServerPool) ->
-  ok.
+teardown_spare(#nplus1_pool{provider=Provider, spare=Spare}) ->
+  ok = im_provider:shutdown(Provider, Spare).
