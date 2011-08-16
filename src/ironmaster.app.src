@@ -11,7 +11,9 @@
                   kernel,
                   stdlib,
                   inets,
-                  ssl
+                  ssl,
+                  crypto,
+                  ssh
                  ]},
   {mod, { ironmaster_app, []}},
   {env, []}

@@ -18,11 +18,16 @@
 -export([
          operation_name/1,
          pool_name/1,
-         provider_name/1
+         provider_name/1,
+         ssh_name/1
         ]).
 
 -export([
          verify_is/2
+        ]).
+
+-export([
+         mock_data/2
         ]).
 
 -spec pool_name(atom()) -> atom().
@@ -37,6 +42,9 @@ operation_name(Operation) ->
 provider_name(Provider) ->
   identifier_to_atom(Provider, provider).
 
+-spec ssh_name(atom()) -> atom().
+ssh_name(Node) ->
+  identifier_to_atom(Node, ssh).
 
 -spec identifier_to_atom(atom(), atom()) -> atom().
 identifier_to_atom(Identifier, Type) ->
@@ -48,3 +56,7 @@ verify_is(Behaviour, Module) ->
   lists:all(fun (T) -> T end,
             [ erlang:function_exported(Module, Fun, Arity) ||
               {Fun, Arity} <- Behaviour:behaviour_info(callbacks)]).
+
+-spec mock_data(atom(), atom()) -> {node_info, string(), integer(), string()}.
+mock_data(_Node, ssh) ->
+  {node_info, "localhost", 22, "sam"}.
