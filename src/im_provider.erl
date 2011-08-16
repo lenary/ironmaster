@@ -56,9 +56,9 @@
 start_link(Provider) ->
   Name = im_utils:provider_name(Provider),
   case gen_server:start_link({local, Name}, ?MODULE, [Provider], []) of
-    ok -> ok;
+    ok                            -> ok;
     {error, {already_started, _}} -> ok;
-    Else -> Else
+    Else                          -> Else
   end.
 
 behaviour_info(callbacks) ->
