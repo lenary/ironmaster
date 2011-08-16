@@ -170,7 +170,6 @@ data_received(State, ChannelId, StdOut, StdErr, DataType, Data) ->
 
 
 eof_received(State, ChannelId, Command, CallbackFn) ->
-  im_audit_log:notify({ssh_eof, State#ssh.node, Command}),
   {StdOut, StdErr} = proplists:get_value(State#ssh.buffers, ChannelId),
   CallbackFn(StdOut, StdErr),
   State.
