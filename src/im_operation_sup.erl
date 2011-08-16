@@ -24,10 +24,9 @@
         ]).
 
 %% Supervisor callbacks
--export([init/1]).
-
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
+-export([
+         init/1
+        ]).
 
 %% ===================================================================
 %% API functions
@@ -46,5 +45,3 @@ start_child([Operation, _Node, Pool] = Opts) ->
 
 init([]) ->
     {ok, { {one_for_one, 5, 10}, []} }.
-
-
