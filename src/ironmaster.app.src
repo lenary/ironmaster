@@ -1,7 +1,7 @@
 {application, ironmaster,
  [
   {description, "Deployment Management for Erlang"},
-  {vsn, "1"},
+  {vsn, "0.1"},
   {modules, [
              ironmaster_app,
              ironmaster_sup
@@ -9,7 +9,9 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  inets,
+                  ssl
                  ]},
   {mod, { ironmaster_app, []}},
   {env, []}

@@ -149,7 +149,11 @@ finished(timeout, State) ->
 
 
 error(timeout, State) ->
-  % im_audit_log:notify({operation_converge_failed, OpName, Server}),
+  im_audit_log:notify({
+                       operation_converge_failed,
+                       State#operation.operation,
+                       State#operation.node
+                      }),
   im_pool:finished_node(State#operation.pool, State#operation.node),
   {stop, normal, State}.
 

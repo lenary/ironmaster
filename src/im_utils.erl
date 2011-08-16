@@ -17,8 +17,7 @@
 
 -export([
          operation_name/1,
-         pool_name/1,
-         random_name/1
+         pool_name/1
         ]).
 
 -export([
@@ -31,17 +30,13 @@ pool_name(Operation) ->
 operation_name(Operation) ->
   identifier_to_atom(Operation, operation).
 
-% TODO: generate random!
-random_name(Base) ->
-  Random = [$4, $4, $5],
-  identifier_to_atom(Base, Random).
-
 identifier_to_atom(Identifier, Type) when is_atom(Type) ->
   identifier_to_atom(Identifier, atom_to_list(Type));
 
 identifier_to_atom(Identifier, Type) ->
   Identifier1 = atom_to_list(Identifier) ++ "_" ++  Type,
   list_to_atom(Identifier1).
+
 
 verify_is(Behaviour, Module) ->
   code:is_loaded(Module) and
