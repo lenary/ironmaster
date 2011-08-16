@@ -25,23 +25,24 @@
          verify_is/2
         ]).
 
+-spec pool_name(atom()) -> atom().
 pool_name(Operation) ->
   identifier_to_atom(Operation, pool).
 
+-spec operation_name(atom()) -> atom().
 operation_name(Operation) ->
   identifier_to_atom(Operation, operation).
 
+-spec provider_name(atom()) -> atom().
 provider_name(Provider) ->
   identifier_to_atom(Provider, provider).
 
-identifier_to_atom(Identifier, Type) when is_atom(Type) ->
-  identifier_to_atom(Identifier, atom_to_list(Type));
 
+-spec identifier_to_atom(atom(), atom()) -> atom().
 identifier_to_atom(Identifier, Type) ->
-  Identifier1 = atom_to_list(Identifier) ++ "_" ++  Type,
-  list_to_atom(Identifier1).
+  list_to_atom(atom_to_list(Identifier) ++ "_" ++  atom_to_list(Type)).
 
-
+-spec verify_is(atom(), atom()) -> true | false.
 verify_is(Behaviour, Module) ->
   code:is_loaded(Module) and
   lists:all(fun (T) -> T end,
