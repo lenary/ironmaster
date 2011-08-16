@@ -24,7 +24,7 @@
 -export([init/1]).
 
 %% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
+-define(SUPERVISOR(I), {I, {I, start_link, []}, permanent, 5000, supervisor, [I]}).
 
 %% ===================================================================
 %% API functions
@@ -38,10 +38,10 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, [?CHILD(im_pool_sup, supervisor),
-                                  ?CHILD(im_operation_sup, supervisor),
-                                  ?CHILD(im_provider_sup, supervisor),
-                                  ?CHILD(im_ssh_sup, supervisor),
+    {ok, { {one_for_one, 5, 10}, [?SUPERVISOR(im_pool_sup),
+                                  ?SUPERVISOR(im_operation_sup),
+                                  ?SUPERVISOR(im_provider_sup),
+                                  ?SUPERVISOR(im_ssh_sup),
                                   {im_audit_log,
                                    {im_audit_log, start_link, []},
                                    permanent,
