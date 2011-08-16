@@ -210,10 +210,8 @@ start_converging(#nplus1_pool{operation=Operation, current=Node, name=Pool}) ->
 hotswap(_ServerPool) ->
   ok.
 
-  % TODO: set off something here to prepare the spare
 setup_spare(#nplus1_pool{provider=Provider, spare=Spare}) ->
   ok = im_provider:bootstrap(Provider, Spare).
 
-  % TODO: set off something here to teardown the spare
 teardown_spare(#nplus1_pool{provider=Provider, spare=Spare}) ->
   ok = im_provider:shutdown(Provider, Spare).
