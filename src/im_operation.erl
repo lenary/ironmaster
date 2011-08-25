@@ -40,7 +40,8 @@
 
 -export([
          behaviour_info/1,
-         start_link/3
+         start_link/3,
+         finished/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -61,7 +62,7 @@
          converging/2,
          after_checking/2,
          error/2,
-         finished/2
+         done/2
         ]).
 
 -record(operation, {
@@ -76,8 +77,8 @@
 
 behaviour_info(callbacks) ->
   [
-   {handle_check, 1},
-   {handle_converge, 1}
+   {handle_check, 2},
+   {handle_converge, 2}
   ];
 behaviour_info(_Other) ->
   undefined.
@@ -86,6 +87,11 @@ start_link(Operation, Node, Pool) ->
   true = im_utils:verify_is(im_operation, Operation),
   Name = im_utils:operation_name(Pool),
   gen_fsm:start_link({local, Name}, ?MODULE, [Operation, Node, Pool], []).
+
+finished(Pool, Result) ->
+  Name = im_utils:operation_name(Pool),
+  gen_fsm:send_event(Name, {finished, Result}),
+  ok.
 
 %% ------------------------------------------------------------------
 %% gen_fsm Function Definitions
@@ -114,7 +120,11 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %% ------------------------------------------------------------------
 
 before_checking(timeout, State) ->
-  NextState = case handle_check(State) of
+  handle_check(State),
+  {next_state, before_checking, State};
+
+before_checking({finished, Result}, State) ->
+  NextState = case Result of
                 true  -> finished;
                 false -> converging
               end,
@@ -126,6 +136,9 @@ before_checking(_Event, State) ->
 
 converging(timeout, State) ->
   handle_converge(State),
+  {next_state, converging, State};
+
+converging({finished, _Result}, State) ->
   {next_state, after_checking, State, 1};
 
 converging(_Event, State) ->
@@ -133,8 +146,12 @@ converging(_Event, State) ->
 
 
 after_checking(timeout, State) ->
-  NextState = case handle_check(State) of
-                true  -> finished;
+  handle_check(State),
+  {next_state, after_checking, State};
+
+after_checking({finished, Result}, State) ->
+  NextState = case Result of
+                true  -> done;
                 false -> error
               end,
   {next_state, NextState, State, 1};
@@ -143,7 +160,7 @@ after_checking(_Event, State) ->
   {next_state, after_checking, State}.
 
 
-finished(timeout, State) ->
+done(timeout, State) ->
   im_pool:finished_node(State#operation.pool, State#operation.node),
   {stop, normal, State}.
 
@@ -161,8 +178,8 @@ error(timeout, State) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-handle_check(#operation{operation=Operation, node=Node}) ->
-  Operation:handle_check(Node).
+handle_check(#operation{operation=Operation, node=Node, pool=Pool}) ->
+  Operation:handle_check(Pool, Node).
 
-handle_converge(#operation{operation=Operation, node=Node}) ->
-  Operation:handle_converge(Node).
+handle_converge(#operation{operation=Operation, node=Node, pool=Pool}) ->
+  Operation:handle_converge(Pool, Node).
