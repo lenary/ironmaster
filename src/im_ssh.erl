@@ -110,9 +110,9 @@ handle_info({ssh_cm, _ConnRef, {data, ChannelId, DataType, Data}}, #ssh{buffers=
 
 handle_info({ssh_cm, _ConnRef, {eof, ChannelId}}, #ssh{channels=Channels} = State) ->
   case proplists:get_value(Channels, ChannelId) of
-    {Command, CallbackFn} -> NewState = eof_received(State, ChannelId, Command, CallbackFn),
-                             {noreply, NewState};
-    undefined             -> {noreply, State}
+    {_Command, CallbackFn} -> NewState = eof_received(State, ChannelId, CallbackFn),
+                              {noreply, NewState};
+    undefined              -> {noreply, State}
   end;
 
 handle_info({ssh_cm, _ConnRef, {closed, ChannelId}}, #ssh{channels=Channels} = State) ->
@@ -169,7 +169,7 @@ data_received(State, ChannelId, StdOut, StdErr, DataType, Data) ->
   State#ssh{buffers=Buffers1}.
 
 
-eof_received(State, ChannelId, Command, CallbackFn) ->
+eof_received(State, ChannelId, CallbackFn) ->
   {StdOut, StdErr} = proplists:get_value(State#ssh.buffers, ChannelId),
   CallbackFn(StdOut, StdErr),
   State.
