@@ -1,2 +1,4 @@
-ebin/*.beam
 .eunit
+TODO
+TALK.md
+ebin
