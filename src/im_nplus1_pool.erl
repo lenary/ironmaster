@@ -206,9 +206,9 @@ choose(#nplus1_pool{done=Done, spare=Spare, current=Current,   todo=[Next|Todo]}
 start_converging(#nplus1_pool{operation=Operation, current=Node, name=Pool}) ->
   im_operation_sup:start_child([Operation, Node, Pool]).
 
-  % TODO: set off something here to hotswap stuff
-hotswap(_ServerPool) ->
-  ok.
+
+hotswap(#nplus1_pool{provider=Provider, spare=Spare, current=Current}) ->
+  ok = im_provider:hotswap(Provider, Current, Spare).
 
 setup_spare(#nplus1_pool{provider=Provider, spare=Spare}) ->
   ok = im_provider:bootstrap(Provider, Spare).
