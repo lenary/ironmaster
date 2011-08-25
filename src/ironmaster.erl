@@ -18,8 +18,25 @@
 -author('Sam Elliott <sam@lenary.co.uk>').
 
 -export([
+         start/0,
          new_operation/2
         ]).
+
+% Stolen from lager.
+start() -> start(ironmaster).
+
+start([]) -> start(ironmaster);
+start(App) ->
+  start_ok(App, application:start(App, permanent)).
+
+start_ok(_App, ok) -> ok;
+start_ok(_App, {error, {already_started, _App}}) -> ok;
+start_ok(App, {error, {not_started, Dep}}) ->
+    ok = start(Dep),
+    start(App);
+start_ok(App, {error, Reason}) ->
+    erlang:error({app_start_failed, App, Reason}).
+
 
 new_operation(Type, Opts) ->
   im_pool_sup:start_child(Type, Opts).

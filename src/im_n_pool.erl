@@ -152,7 +152,7 @@ converging(timeout, State) ->
   {next_state, converging, State};
 
 converging(finished_node, State) ->
-  im_audit_log:notify({pool_finished_node, State#n_pool.name, State#n_pool.current}),
+  im_audit_log:notify({pool_finished_node, State#n_pool.name, State#n_pool.operation, State#n_pool.current}),
   {next_state, preparing, State, 1};
 
 converging(_Event, State) ->
@@ -166,7 +166,7 @@ converging(_Event, _From, State) ->
 
 
 finished(timeout, State) ->
-  im_audit_log:notify({pool_finished, State#n_pool.name, State#n_pool.done}),
+  im_audit_log:notify({pool_finished, State#n_pool.name, State#n_pool.operation, State#n_pool.done}),
   {stop, normal, State}.
 
 

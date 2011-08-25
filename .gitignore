@@ -2,3 +2,6 @@
 TODO
 TALK.md
 ebin
+deps
+var
+erl_crash.dump

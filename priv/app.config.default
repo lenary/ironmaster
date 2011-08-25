@@ -1,0 +1,15 @@
+[
+  {ironmaster, [
+
+  ]},
+
+  {lager, [
+    {handlers, [
+      {lager_console_backend, info},
+      {lager_file_backend, [
+        {"var/error.log", error, 10485760, "$W0D0", 5},
+        {"var/info.log",  info,  10485760, "$W0D0", 5}
+      ]}
+    ]}
+  ]}
+].

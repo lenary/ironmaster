@@ -25,7 +25,9 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    ironmaster_sup:start_link().
+    Res = ironmaster_sup:start_link(),
+    im_audit_lager:add_handler(),
+    Res.
 
 stop(_State) ->
     ok.

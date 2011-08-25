@@ -161,12 +161,12 @@ preparing(_Event, _From, State) ->
 
 
 converging(timeout, State) ->
-  im_audit_log:notify({pool_started_node, State#nplus1_pool.name, State#nplus1_pool.current}),
+  im_audit_log:notify({pool_started_node, State#nplus1_pool.name, State#nplus1_pool.operation, State#nplus1_pool.current}),
   start_converging(State),
   {next_state, converging, State};
 
 converging({finished_node, Node}, #nplus1_pool{current=Node} = State) ->
-  im_audit_log:notify({pool_finished_node, State#nplus1_pool.name, State#nplus1_pool.current}),
+  im_audit_log:notify({pool_finished_node, State#nplus1_pool.name, State#nplus1_pool.operation, State#nplus1_pool.current}),
   {next_state, preparing, State, 1};
 
 converging(_Event, State) ->
