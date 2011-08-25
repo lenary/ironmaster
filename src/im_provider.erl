@@ -63,19 +63,28 @@ start_link(Provider) ->
 
 behaviour_info(callbacks) ->
   [
-   {bootstrap_server, 1},
-   {shutdown_server, 1}
+   {bootstrap_server, 2},
+   {shutdown_server, 2},
+   {hotswap_server, 3}
   ];
 behaviour_info(_Other) ->
   undefined.
 
 bootstrap(Provider, Node) ->
   Name = im_utils:provider_name(Provider),
-  gen_server:call(Name, {bootstrap_server, Node}).
+  gen_server:call(Name, {bootstrap_server, Node}, infinity).
 
 shutdown(Provider, Node) ->
   Name = im_utils:provider_name(Provider),
-  gen_server:call(Name, {shutdown_server, Node}).
+  gen_server:call(Name, {shutdown_server, Node}, infinity).
+
+hotswap(Provider, CurrNode, SpareNode) ->
+  Name = im_utils:provider_name(Provider),
+  gen_server:call(Name, {hotswap_server, CurrNode, SpareNode}, infinity).
+
+finished(ReplyTo, Result) ->
+  gen_server:reply(ReplyTo, Result),
+  ok.
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -85,13 +94,17 @@ init([Provider]) ->
   State = #provider{provider=Provider},
   {ok, State}.
 
-handle_call({bootstrap_server, Node}, _From, State) ->
-  Res = bootstrap_server(State, Node),
-  {reply, Res, State};
+handle_call({bootstrap_server, Node}, From, State) ->
+  bootstrap_server(State, Node, From),
+  {noreply, State};
 
-handle_call({shutdown_server, Node}, _From, State) ->
-  Res = shutdown_server(State, Node),
-  {reply, Res, State};
+handle_call({shutdown_server, Node}, From, State) ->
+  shutdown_server(State, Node, From),
+  {noreply, State};
+
+handle_call({hotswap_server, CurrNode, SpareNode}, From, State) ->
+  hotswap_server(State, CurrNode, SpareNode, From),
+  {noreply, State};
 
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
@@ -112,8 +125,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-bootstrap_server(State, Node) ->
-  (State#provider.provider):bootstrap_server(Node).
+bootstrap_server(State, Node, ReplyTo) ->
+  (State#provider.provider):bootstrap_server(Node, ReplyTo).
 
-shutdown_server(State, Node) ->
-  (State#provider.provider):shutdown_server(Node).
+shutdown_server(State, Node, ReplyTo) ->
+  (State#provider.provider):shutdown_server(Node, ReplyTo).
+
+hotswap_server(State, CurrNode, SpareNode, ReplyTo) ->
+  (State#provider.provider):hotswap_server(CurrNode, SpareNode, ReplyTo).
